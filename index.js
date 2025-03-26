@@ -11,12 +11,12 @@ app.use(cors());
 // Buscar todos os mangás com filtros e paginação
 app.get('/mangas', async (req, res) => {
   try {
-    const queryParams = new URLSearchParams(req.query).toString();
-    const response = await fetch(`${BASE_URL}/manga?${queryParams}`);
-    const data = await response.json();
-    res.json(data);
+    const response = await axios.get(`${BASE_URL}/manga`, {
+      params: req.query
+    });
+    res.json(response.data);
   } catch (error) {
-    console.error('Erro ao buscar todos os mangás:', error);
+    console.error('Erro ao buscar todos os mangás:', error.response?.data || error.message);
     res.status(500).json({ error: 'Erro ao buscar todos os mangás' });
   }
 });
