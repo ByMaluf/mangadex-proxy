@@ -11,19 +11,22 @@ app.get('/mangas', async (req, res) => {
       },
     });
 
-    const mangas = await Promise.all(
-      response.data.data.map(async (manga) => {
+    const mangas = response.data.data;
+
+    const enriched = await Promise.all(
+      mangas.map(async (manga) => {
         const coverRel = manga.relationships.find((rel) => rel.type === 'cover_art');
         const authorRel = manga.relationships.find((rel) => rel.type === 'author');
         const artistRel = manga.relationships.find((rel) => rel.type === 'artist');
 
         let fileName = null;
-        if (coverRel?.id) {
+
+        if (coverRel) {
           try {
             const coverResponse = await axios.get(`${BASE_URL}/cover/${coverRel.id}`);
             fileName = coverResponse.data.data.attributes.fileName;
           } catch (err) {
-            console.warn(`Falha ao buscar cover ${coverRel.id}:`, err.message);
+            console.error('Erro ao buscar a capa:', err.message);
           }
         }
 
@@ -44,14 +47,16 @@ app.get('/mangas', async (req, res) => {
           updatedAt: manga.attributes.updatedAt,
           author: authorRel?.attributes?.name || null,
           artist: artistRel?.attributes?.name || null,
-          imageUrl: fileName ? `${BASE_IMAGE_URL}/covers/${manga.id}/${fileName}.256.jpg` : null,
+          imageUrl: fileName
+            ? `${BASE_IMAGE_URL}/covers/${manga.id}/${fileName}.256.jpg`
+            : null,
         };
       })
     );
 
-    res.json(mangas);
+    res.json(enriched);
   } catch (error) {
-    console.error('Erro ao buscar mangás completos:', error.message);
+    console.error('Erro ao buscar mangás completos:', error);
     res.status(500).json({ error: 'Erro ao buscar mangás completos' });
   }
 });
