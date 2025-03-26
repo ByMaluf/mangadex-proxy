@@ -1,5 +1,5 @@
 import express from 'express';
-import fetch from 'node-fetch';
+import axios from 'axios';
 import cors from 'cors';
 
 const app = express();
@@ -25,11 +25,12 @@ app.get('/mangas', async (req, res) => {
 app.get('/search', async (req, res) => {
   const { title } = req.query;
   try {
-    const response = await fetch(`${BASE_URL}/manga?title=${encodeURIComponent(title)}`);
-    const data = await response.json();
-    res.json(data);
+    const response = await axios.get(`${BASE_URL}/manga`, {
+      params: { title }
+    });
+    res.json(response.data);
   } catch (error) {
-    console.error('Erro ao buscar mangá por título:', error);
+    console.error('Erro ao buscar mangá por título:', error.response?.data || error.message);
     res.status(500).json({ error: 'Erro ao buscar mangá por título' });
   }
 });
@@ -38,11 +39,10 @@ app.get('/search', async (req, res) => {
 app.get('/manga/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const response = await fetch(`${BASE_URL}/manga/${id}`);
-    const data = await response.json();
-    res.json(data);
+    const response = await axios.get(`${BASE_URL}/manga/${id}`);
+    res.json(response.data);
   } catch (error) {
-    console.error('Erro ao buscar mangá por ID:', error);
+    console.error('Erro ao buscar mangá por ID:', error.response?.data || error.message);
     res.status(500).json({ error: 'Erro ao buscar mangá por ID' });
   }
 });
@@ -51,11 +51,10 @@ app.get('/manga/:id', async (req, res) => {
 app.get('/cover/:coverId', async (req, res) => {
   const { coverId } = req.params;
   try {
-    const response = await fetch(`${BASE_URL}/cover/${coverId}`);
-    const data = await response.json();
-    res.json(data);
+    const response = await axios.get(`${BASE_URL}/cover/${coverId}`);
+    res.json(response.data);
   } catch (error) {
-    console.error('Erro ao buscar capa:', error);
+    console.error('Erro ao buscar capa:', error.response?.data || error.message);
     res.status(500).json({ error: 'Erro ao buscar capa' });
   }
 });
@@ -73,12 +72,19 @@ app.get('/chapters/:mangaId', async (req, res) => {
   const { page = 0, order = 'asc', language = 'en' } = req.query;
 
   try {
-    const url = `${BASE_URL}/chapter?manga=${mangaId}&translatedLanguage[]=${language}&order[chapter]=${order}&limit=96&offset=${page}`;
-    const response = await fetch(url);
-    const data = await response.json();
-    res.json(data);
+    const response = await axios.get(`${BASE_URL}/chapter`, {
+      params: {
+        manga: mangaId,
+        'translatedLanguage[]': language,
+        'order[chapter]': order,
+        includeEmptyPages: 0,
+        limit: 96,
+        offset: page
+      }
+    });
+    res.json(response.data);
   } catch (error) {
-    console.error('Erro ao buscar capítulos:', error);
+    console.error('Erro ao buscar capítulos:', error.response?.data || error.message);
     res.status(500).json({ error: 'Erro ao buscar capítulos' });
   }
 });
@@ -88,11 +94,12 @@ app.get('/volumes/:mangaId', async (req, res) => {
   const { mangaId } = req.params;
   const { language = 'en' } = req.query;
   try {
-    const response = await fetch(`${BASE_URL}/manga/${mangaId}/aggregate?translatedLanguage[]=${language}`);
-    const data = await response.json();
-    res.json(data);
+    const response = await axios.get(`${BASE_URL}/manga/${mangaId}/aggregate`, {
+      params: { 'translatedLanguage[]': language }
+    });
+    res.json(response.data);
   } catch (error) {
-    console.error('Erro ao buscar capítulos agregados:', error);
+    console.error('Erro ao buscar capítulos agregados:', error.response?.data || error.message);
     res.status(500).json({ error: 'Erro ao buscar capítulos agregados' });
   }
 });
@@ -101,11 +108,10 @@ app.get('/volumes/:mangaId', async (req, res) => {
 app.get('/chapter/:chapterId/images', async (req, res) => {
   const { chapterId } = req.params;
   try {
-    const response = await fetch(`${BASE_URL}/at-home/server/${chapterId}`);
-    const data = await response.json();
-    res.json(data);
+    const response = await axios.get(`${BASE_URL}/at-home/server/${chapterId}`);
+    res.json(response.data);
   } catch (error) {
-    console.error('Erro ao buscar imagens do capítulo:', error);
+    console.error('Erro ao buscar imagens do capítulo:', error.response?.data || error.message);
     res.status(500).json({ error: 'Erro ao buscar imagens do capítulo' });
   }
 });
