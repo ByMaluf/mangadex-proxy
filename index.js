@@ -1,5 +1,5 @@
 import express from 'express';
-import axios from 'axios';
+import fetch from 'node-fetch';
 import cors from 'cors';
 
 const app = express();
@@ -11,12 +11,12 @@ app.use(cors());
 // Buscar todos os mangás com filtros e paginação
 app.get('/mangas', async (req, res) => {
   try {
-    const response = await axios.get(`${BASE_URL}/manga`, {
-      params: req.query
-    });
-    res.json(response.data);
+    const queryParams = new URLSearchParams(req.query).toString();
+    const response = await fetch(`${BASE_URL}/manga?${queryParams}`);
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    console.error('Erro ao buscar todos os mangás:', error.response?.data || error.message);
+    console.error('Erro ao buscar todos os mangás:', error);
     res.status(500).json({ error: 'Erro ao buscar todos os mangás' });
   }
 });
@@ -25,12 +25,11 @@ app.get('/mangas', async (req, res) => {
 app.get('/search', async (req, res) => {
   const { title } = req.query;
   try {
-    const response = await axios.get(`${BASE_URL}/manga`, {
-      params: { title }
-    });
-    res.json(response.data);
+    const response = await fetch(`${BASE_URL}/manga?title=${encodeURIComponent(title)}`);
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    console.error('Erro ao buscar mangá por título:', error.response?.data || error.message);
+    console.error('Erro ao buscar mangá por título:', error);
     res.status(500).json({ error: 'Erro ao buscar mangá por título' });
   }
 });
@@ -39,10 +38,11 @@ app.get('/search', async (req, res) => {
 app.get('/manga/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const response = await axios.get(`${BASE_URL}/manga/${id}`);
-    res.json(response.data);
+    const response = await fetch(`${BASE_URL}/manga/${id}`);
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    console.error('Erro ao buscar mangá por ID:', error.response?.data || error.message);
+    console.error('Erro ao buscar mangá por ID:', error);
     res.status(500).json({ error: 'Erro ao buscar mangá por ID' });
   }
 });
@@ -51,10 +51,11 @@ app.get('/manga/:id', async (req, res) => {
 app.get('/cover/:coverId', async (req, res) => {
   const { coverId } = req.params;
   try {
-    const response = await axios.get(`${BASE_URL}/cover/${coverId}`);
-    res.json(response.data);
+    const response = await fetch(`${BASE_URL}/cover/${coverId}`);
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    console.error('Erro ao buscar capa:', error.response?.data || error.message);
+    console.error('Erro ao buscar capa:', error);
     res.status(500).json({ error: 'Erro ao buscar capa' });
   }
 });
@@ -70,21 +71,21 @@ app.get('/cover/url/:coverId/:fileName', (req, res) => {
 app.get('/chapters/:mangaId', async (req, res) => {
   const { mangaId } = req.params;
   const { page = 0, order = 'asc', language = 'en' } = req.query;
+  const query = new URLSearchParams({
+    manga: mangaId,
+    'translatedLanguage[]': language,
+    'order[chapter]': order,
+    includeEmptyPages: '0',
+    limit: '96',
+    offset: page.toString()
+  }).toString();
 
   try {
-    const response = await axios.get(`${BASE_URL}/chapter`, {
-      params: {
-        manga: mangaId,
-        'translatedLanguage[]': language,
-        'order[chapter]': order,
-        includeEmptyPages: 0,
-        limit: 96,
-        offset: page
-      }
-    });
-    res.json(response.data);
+    const response = await fetch(`${BASE_URL}/chapter?${query}`);
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    console.error('Erro ao buscar capítulos:', error.response?.data || error.message);
+    console.error('Erro ao buscar capítulos:', error);
     res.status(500).json({ error: 'Erro ao buscar capítulos' });
   }
 });
@@ -93,13 +94,13 @@ app.get('/chapters/:mangaId', async (req, res) => {
 app.get('/volumes/:mangaId', async (req, res) => {
   const { mangaId } = req.params;
   const { language = 'en' } = req.query;
+
   try {
-    const response = await axios.get(`${BASE_URL}/manga/${mangaId}/aggregate`, {
-      params: { 'translatedLanguage[]': language }
-    });
-    res.json(response.data);
+    const response = await fetch(`${BASE_URL}/manga/${mangaId}/aggregate?translatedLanguage[]=${language}`);
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    console.error('Erro ao buscar capítulos agregados:', error.response?.data || error.message);
+    console.error('Erro ao buscar capítulos agregados:', error);
     res.status(500).json({ error: 'Erro ao buscar capítulos agregados' });
   }
 });
@@ -108,10 +109,11 @@ app.get('/volumes/:mangaId', async (req, res) => {
 app.get('/chapter/:chapterId/images', async (req, res) => {
   const { chapterId } = req.params;
   try {
-    const response = await axios.get(`${BASE_URL}/at-home/server/${chapterId}`);
-    res.json(response.data);
+    const response = await fetch(`${BASE_URL}/at-home/server/${chapterId}`);
+    const data = await response.json();
+    res.json(data);
   } catch (error) {
-    console.error('Erro ao buscar imagens do capítulo:', error.response?.data || error.message);
+    console.error('Erro ao buscar imagens do capítulo:', error);
     res.status(500).json({ error: 'Erro ao buscar imagens do capítulo' });
   }
 });
