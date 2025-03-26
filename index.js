@@ -1,10 +1,12 @@
-const express = require('express');
-const axios = require('axios');
+import express from 'express';
+import axios from 'axios';
+import cors from 'cors';
+
 const app = express();
+app.use(cors());
 
 const BASE_URL = 'https://api.mangadex.org';
 
-// Endpoint /mangas
 app.get('/mangas', async (req, res) => {
   try {
     const response = await axios.get(`${BASE_URL}/manga`, {
@@ -24,5 +26,4 @@ app.get('/mangas', async (req, res) => {
   }
 });
 
-// Exportar para Vercel
-module.exports = app;
+export default app;
