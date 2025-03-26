@@ -8,125 +8,57 @@ const BASE_IMAGE_URL = 'https://uploads.mangadex.org';
 
 app.use(cors());
 
-// Buscar todos os mangás com filtros e paginação
 app.get('/mangas', async (req, res) => {
   try {
+    const { limit = 10, offset = 0 } = req.query;
+
     const response = await axios.get(`${BASE_URL}/manga`, {
-      params: req.query
-    });
-    res.json(response.data);
-  } catch (error) {
-    console.error('Erro ao buscar todos os mangás:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Erro ao buscar todos os mangás' });
-  }
-});
-
-// Buscar mangá por título
-app.get('/search', async (req, res) => {
-  const { title } = req.query;
-  try {
-    const response = await axios.get(`${BASE_URL}/manga`, {
-      params: { title }
-    });
-    res.json(response.data);
-  } catch (error) {
-    console.error('Erro ao buscar mangá por título:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Erro ao buscar mangá por título' });
-  }
-});
-
-// Buscar detalhes de um mangá por ID
-app.get('/manga/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const response = await axios.get(`${BASE_URL}/manga/${id}`);
-    res.json(response.data);
-  } catch (error) {
-    console.error('Erro ao buscar mangá por ID:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Erro ao buscar mangá por ID' });
-  }
-});
-
-// Buscar nome de arquivo da capa pelo ID da capa
-app.get('/cover/:coverId', async (req, res) => {
-  const { coverId } = req.params;
-  try {
-    const response = await axios.get(`${BASE_URL}/cover/${coverId}`);
-    res.json(response.data);
-  } catch (error) {
-    console.error('Erro ao buscar capa:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Erro ao buscar capa' });
-  }
-});
-
-// Montar URL da capa
-app.get('/cover/url/:coverId/:fileName', (req, res) => {
-  const { coverId, fileName } = req.params;
-  const imageUrl = `${BASE_IMAGE_URL}/covers/${coverId}/${fileName}.256.jpg`;
-  res.json({ url: imageUrl });
-});
-
-// Listar capítulos por mangá
-app.get('/chapters/:mangaId', async (req, res) => {
-  const { mangaId } = req.params;
-  const { page = 0, order = 'asc', language = 'en' } = req.query;
-
-  try {
-    const response = await axios.get(`${BASE_URL}/chapter`, {
       params: {
-        manga: mangaId,
-        'translatedLanguage[]': language,
-        'order[chapter]': order,
-        includeEmptyPages: 0,
-        limit: 96,
-        offset: page
-      }
+        limit,
+        offset,
+        'includes[]': ['author', 'artist', 'cover_art'],
+        'order[latestUploadedChapter]': 'desc',
+      },
     });
-    res.json(response.data);
-  } catch (error) {
-    console.error('Erro ao buscar capítulos:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Erro ao buscar capítulos' });
-  }
-});
 
-// Capítulos agregados por volume
-app.get('/volumes/:mangaId', async (req, res) => {
-  const { mangaId } = req.params;
-  const { language = 'en' } = req.query;
+    const mangas = response.data.data;
 
-  try {
-    const response = await axios.get(`${BASE_URL}/manga/${mangaId}/aggregate`, {
-      params: { 'translatedLanguage[]': language }
+    const enriched = mangas.map((manga) => {
+      const coverRel = manga.relationships.find((rel) => rel.type === 'cover_art');
+      const authorRel = manga.relationships.find((rel) => rel.type === 'author');
+      const artistRel = manga.relationships.find((rel) => rel.type === 'artist');
+      const fileName = coverRel?.attributes?.fileName;
+
+      return {
+        id: manga.id,
+        title: manga.attributes.title,
+        altTitles: manga.attributes.altTitles,
+        description: manga.attributes.description,
+        status: manga.attributes.status,
+        contentRating: manga.attributes.contentRating,
+        tags: manga.attributes.tags,
+        publicationDemographic: manga.attributes.publicationDemographic,
+        originalLanguage: manga.attributes.originalLanguage,
+        lastVolume: manga.attributes.lastVolume,
+        lastChapter: manga.attributes.lastChapter,
+        year: manga.attributes.year,
+        createdAt: manga.attributes.createdAt,
+        updatedAt: manga.attributes.updatedAt,
+        author: authorRel?.attributes?.name || null,
+        artist: artistRel?.attributes?.name || null,
+        imageUrl: fileName ? `${BASE_IMAGE_URL}/covers/${manga.id}/${fileName}.256.jpg` : null,
+      };
     });
-    res.json(response.data);
+
+    res.json(enriched);
   } catch (error) {
-    console.error('Erro ao buscar capítulos agregados:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Erro ao buscar capítulos agregados' });
+    console.error('Erro ao buscar mangás completos:', error);
+    res.status(500).json({ error: 'Erro ao buscar mangás completos' });
   }
 });
 
-// Dados da imagem de um capítulo
-app.get('/chapter/:chapterId/images', async (req, res) => {
-  const { chapterId } = req.params;
-  try {
-    const response = await axios.get(`${BASE_URL}/at-home/server/${chapterId}`);
-    res.json(response.data);
-  } catch (error) {
-    console.error('Erro ao buscar imagens do capítulo:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Erro ao buscar imagens do capítulo' });
-  }
-});
-
-// URL da imagem de um capítulo
-app.get('/chapter/image/:hash/:fileName', (req, res) => {
-  const { hash, fileName } = req.params;
-  const imageUrl = `${BASE_IMAGE_URL}/data/${hash}/${fileName}`;
-  res.json({ url: imageUrl });
-});
-
-// Página inicial
 app.get('/', (req, res) => {
-  res.send('Proxy MangaDex funcionando!');
+  res.send('Proxy MangaDex aprimorado funcionando!');
 });
 
 const port = process.env.PORT || 3000;
