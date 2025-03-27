@@ -2,7 +2,9 @@ import express from 'express';
 import axios from 'axios';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
-import swaggerJSDoc from 'swagger-jsdoc';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const app = express();
 app.use(cors());
@@ -10,63 +12,17 @@ app.use(cors());
 const BASE_URL = 'https://api.mangadex.org';
 const BASE_IMAGE_URL = 'https://uploads.mangadex.org';
 
-// Swagger config
-const swaggerOptions = {
-  definition: {
-    openapi: '3.0.0',
-    info: {
-      title: 'Mangadex Proxy API',
-      version: '1.0.0',
-      description: 'Proxy para a API do MangaDex com dados enriquecidos',
-    },
-    servers: [
-      {
-        url: 'https://mangadex-proxy-seven.vercel.app',
-        description: 'Servidor Vercel',
-      },
-      {
-        url: 'http://localhost:3000',
-        description: 'Servidor local',
-      },
-    ],
-  },
-  apis: ['./index.js'],
-};
+// Para poder usar __dirname com ESModules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const swaggerSpec = swaggerJSDoc(swaggerOptions);
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Carrega o swagger.json
+const swaggerDocument = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'swagger.json'), 'utf8')
+);
 
-/**
- * @swagger
- * /mangas:
- *   get:
- *     summary: Retorna todos os mangás com dados enriquecidos
- *     parameters:
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *         description: Quantidade de mangás a retornar
- *       - in: query
- *         name: offset
- *         schema:
- *           type: integer
- *         description: Offset da paginação
- *     responses:
- *       200:
- *         description: Lista de mangás com dados adicionais
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 result:
- *                   type: string
- *                 data:
- *                   type: array
- *                   items:
- *                     type: object
- */
+// Swagger UI
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/mangas', async (req, res) => {
   try {
@@ -98,7 +54,6 @@ app.get('/mangas', async (req, res) => {
         id: manga.id,
         type: manga.type,
         attributes: manga.attributes,
-        relationships,
         authorName: author?.attributes?.name || null,
         artistName: artist?.attributes?.name || null,
         coverFileName,
