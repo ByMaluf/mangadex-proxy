@@ -11,7 +11,7 @@ app.use(cors());
 const BASE_URL = 'https://api.mangadex.org';
 const BASE_IMAGE_URL = 'https://uploads.mangadex.org';
 
-const swaggerDocument = JSON.parse(fs.readFileSync(path.join(__dirname, 'swagger.json'), 'utf8'));
+const swaggerDocument = require('./swagger.json');
 
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
